@@ -3,24 +3,25 @@ import { useCallback } from "react";
 export function LocationButton(props: {
   onClick: (latitude: number, longitude: number, error?: string) => void;
 }) {
+  const { onClick } = props;
   const getLocation = useCallback(() => {
     if (!navigator.geolocation) {
-      props.onClick(0, 0, "Geolocation is not supported by your browser");
+      onClick(0, 0, "Geolocation is not supported by your browser");
     } else {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          props.onClick(position.coords.latitude, position.coords.longitude);
+          onClick(position.coords.latitude, position.coords.longitude);
         },
         () => {
-          props.onClick(0, 0, "Unable to retrieve your location");
+          onClick(0, 0, "Unable to retrieve your location");
         }
       );
     }
-  }, []);
+  }, [onClick]);
 
   return (
     <div>
-      <Button onClick={getLocation}>Get Location</Button>
+      <Button onClick={getLocation}>הצג מיקום</Button>
     </div>
   );
 }

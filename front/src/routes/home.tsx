@@ -46,17 +46,18 @@ export function Home(props: {}) {
                 );
               }}
             >
-              Find Attractions
+              מצא אטרקציות בסביבתי
             </Button>
           ) : (
             ""
           )}
         </div>
       </div>
-      );
       {state.firstUse ? (
         state.errorMessage ? (
-          <div style={{ color: "red" }}>{state.errorMessage}</div>
+          <div style={{ color: "red", textAlign: "center" }}>
+            {state.errorMessage}
+          </div>
         ) : (
           <div style={{ textAlign: "center" }}>
             <div>

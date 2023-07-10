@@ -1,12 +1,5 @@
-import React, { useCallback, useEffect, useState } from "react";
-import {
-  BrowserRouter as Router,
-  Route,
-  Link,
-  Routes,
-  createBrowserRouter,
-  RouterProvider,
-} from "react-router-dom";
+import React from "react";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { Home } from "./routes/home";
 import Attractions from "./routes/attractions";
 const router = createBrowserRouter([
@@ -22,7 +15,7 @@ const router = createBrowserRouter([
 //
 function App() {
   return (
-    <div className="App">
+    <div style={{ direction: "rtl" }} className="App">
       <RouterProvider router={router} />
     </div>
   );

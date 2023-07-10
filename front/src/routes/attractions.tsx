@@ -1,10 +1,13 @@
 import { useMatch } from "react-router-dom";
-import axios, { AxiosResponse } from "axios";
+import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
 import { ResponseRecord } from "../types/types";
 import Cookies from "js-cookie";
+import { Button } from "../components/page";
 
 const CookieKey = "favorites";
+
+type DataTableRecord = ResponseRecord & { km: number };
 
 export default function Attractions(props: {}) {
   const match = useMatch("/attractions/lat/:lat/long/:long");
@@ -13,39 +16,19 @@ export default function Attractions(props: {}) {
     throw new Error("Bad request");
   }
   const [state, setState] = useState<{
-    records: (ResponseRecord & { km: number })[];
+    records: DataTableRecord[];
     error: string;
   }>({
     records: [],
     error: "",
   });
 
-  const [favoritesIds, setFavorites] = useState<string[]>([]);
   const { lat, long } = match?.params;
-
-  const toggleFavorite = useCallback(
-    (id: string) => {
-      const nextState = favoritesIds.includes(id)
-        ? favoritesIds?.filter((f) => f !== id)
-        : [...favoritesIds, id];
-      setFavorites([...nextState]);
-      const json = JSON.stringify({ favoritesIds: [...nextState] });
-
-      Cookies.set(CookieKey, json);
-    },
-    [favoritesIds]
-  );
+  const { favoritesIds, toggleFavorite, initFavorites } = useFavoriteCookie();
 
   useEffect(() => {
-    const cookie = Cookies.get(CookieKey);
-    if (cookie) {
-      try {
-        const res = JSON.parse(cookie);
-        setFavorites([...res?.favoritesIds]);
-      } catch (e) {
-        console.log(e);
-      }
-    }
+    initFavorites();
+
     axios
       .get("http://localhost:3001/")
       .then((response) => {
@@ -62,58 +45,100 @@ export default function Attractions(props: {}) {
         }));
       })
       .catch((err) => {
-        setState((state) => ({ ...state, error: err }));
+        setState((state) => ({ ...state, error: "Error" }));
       });
-  }, [lat, long]);
+  }, [initFavorites, lat, long]);
 
   return (
     <div>
-      <h1 style={{ textAlign: "center" }}>Attractions</h1>
-      <table border={1} style={{ direction: "rtl", tableLayout: "fixed" }}>
-        <thead>
-          <tr>
-            <th>שם האטרקציה</th>
-            <th>מזהה</th>
-            <th>כתובת</th>
-            <th>שעות פתיחה</th>
-            <th>מרחק</th>
-            <th>לינק</th>
-            <th>הוספה למועדפים</th>
-          </tr>
-        </thead>
-        <tbody>
-          {state.records.map((record) => {
-            const id = `fav_${record.Id}`;
-            return (
-              <tr key={record.Id} style={{ fontSize: "14px" }}>
-                <td className="p-4">{record.Name}</td>
-                <td>{record.Id}</td>
-                <td>{record.Address}</td>
-                <td>{record.Opening_Hours}</td>
-                <td>{`${record.km.toFixed()}km`}</td>
-                <td>
-                  <a target="_blank" href={record.Product_Url} rel="noreferrer">
-                    לינק
-                  </a>
-                </td>
-                <td>
-                  <div
-                    onClick={() => {
-                      toggleFavorite(record.Id.toString());
-                    }}
-                  >
-                    {favoritesIds.includes(record.Id.toString())
-                      ? "Remove From Favorite"
-                      : "Add To Favirite"}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <h1 style={{ textAlign: "center" }}>אטרקציות</h1>
+      {state.records.length ? (
+        <table border={1} style={{ direction: "rtl", tableLayout: "fixed" }}>
+          <thead>
+            <tr>
+              <th>שם האטרקציה</th>
+              <th>מזהה</th>
+              <th>כתובת</th>
+              <th>שעות פתיחה</th>
+              <th>מרחק</th>
+              <th>לינק</th>
+              <th>הוספה למועדפים</th>
+            </tr>
+          </thead>
+          <tbody>
+            {state.records.map((record) => {
+              return (
+                <tr key={record.Id} style={{ fontSize: "14px" }}>
+                  <td>{record.Name}</td>
+                  <td>{record.Id}</td>
+                  <td>{record.Address}</td>
+                  <td>
+                    {record.Opening_Hours
+                      ? record.Opening_Hours
+                      : record.Notes_for_opening_hours}
+                  </td>
+                  <td>{`${record.km.toFixed()}km`}</td>
+                  <td>
+                    <a
+                      target="_blank"
+                      href={record.Product_Url}
+                      rel="noreferrer"
+                    >
+                      לינק
+                    </a>
+                  </td>
+                  <td>
+                    <Button
+                      onClick={() => {
+                        toggleFavorite(record.Id.toString());
+                      }}
+                    >
+                      {favoritesIds.includes(record.Id.toString())
+                        ? "Remove From Favorite"
+                        : "Add To Favirite"}
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      ) : state.error ? (
+        <div style={{ textAlign: "center" }}>{state.error}</div>
+      ) : (
+        <div style={{ textAlign: "center" }}>Loading...</div>
+      )}
     </div>
   );
+}
+
+export function useFavoriteCookie() {
+  const [favoritesIds, setFavorites] = useState<string[]>([]);
+  const toggleFavorite = useCallback(
+    (id: string) => {
+      const nextState = favoritesIds.includes(id)
+        ? favoritesIds?.filter((f) => f !== id)
+        : [...favoritesIds, id];
+      setFavorites([...nextState]);
+      const json = JSON.stringify({ favoritesIds: [...nextState] });
+
+      Cookies.set(CookieKey, json);
+    },
+    [favoritesIds]
+  );
+
+  const initFavorites = useCallback(() => {
+    const cookie = Cookies.get(CookieKey);
+    if (cookie) {
+      try {
+        const res = JSON.parse(cookie);
+        setFavorites([...res?.favoritesIds]);
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  }, []);
+  return { favoritesIds, toggleFavorite, initFavorites };
 }
 
 function getDistanceInKm(
