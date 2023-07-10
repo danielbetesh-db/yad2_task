@@ -12,18 +12,11 @@ app.use(cors());
 
 const db = new JsonFileManager("src/db/database.json");
 
-//Read on start
-readAttractions();
-
 cron.schedule(
   "0 0 * * *",
   async () => {
     console.log("Updating the database...");
-
-    const data = await readAttractions();
-    if (data) {
-      db.write(data);
-    }
+    await updateDB();
   },
   {
     scheduled: true,
@@ -50,6 +43,17 @@ async function readAttractions() {
   }
 }
 
-app.listen(port, () => {
+async function updateDB() {
+  const data = await readAttractions();
+  if (data) {
+    db.write(data);
+    console.log("Database was updated.");
+  } else {
+    console.log("No data");
+  }
+}
+
+app.listen(port, async () => {
+  await updateDB();
   console.log(`Server is running at http://localhost:${port}`);
 });
